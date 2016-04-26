@@ -1,0 +1,36 @@
+﻿@using Mvc.JQuery.DataTables
+@using DataTablesFork.Controllers
+@using Mvc.JQuery.DataTables.Models
+@using Mvc.JQuery.DataTables.Serialization
+
+
+@{
+    ViewBag.Title = ViewBag.Title;
+}
+
+
+@section Styles{
+    @Styles.Render("~/Content/dataTables")
+}
+
+
+<link rel="stylesheet" href="//cdn.datatables.net/plug-ins/1.10.7/integration/bootstrap/3/dataTables.bootstrap.css" />
+
+
+<h1>@ViewBag.Title</h1>
+
+@{
+    var vm = Html.DataTableVm("table-id", (HomeController h) => h.GetViewModel(null));
+    vm.AutoWidth = true;
+}
+
+<script type="text/javascript">
+    function encloseInEmTag(data, type, full) {
+        return '<em>' + data + '</em>';
+    }
+</script>
+@section Scripts {    
+    @Scripts.Render("~/plugins/dataTables")
+}
+
+@Html.Partial("_DynamicTable", vm)

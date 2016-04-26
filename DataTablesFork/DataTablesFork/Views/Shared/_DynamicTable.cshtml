@@ -1,0 +1,131 @@
+﻿@using System.Data.Odbc
+@using System.Linq
+@using Mvc.JQuery.DataTables
+@using Newtonsoft.Json
+@using Newtonsoft.Json.Linq
+
+@model DataTableConfigVm
+
+@{
+    string ajaxUrl = Model.AjaxUrl.ToLower();        
+}
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <ol class="breadcrumb">                    
+
+                </ol>
+            </div>
+            <div class="panel-body">
+                <div class="table-responsive">
+                    <table id="@Model.Id" class="table table-striped table-bordered table-hover table-green">
+                        <thead>
+                            @if (Model.ColumnFilter)
+                            {
+                                <tr>
+                                    @foreach (var column in Model.Columns)
+                                    {
+                                        <th>@column.DisplayName</th>
+                                    }
+                                </tr>
+                            }
+                            @if (!Model.HideHeaders)
+                            {
+                                <tr>
+                                    @foreach (var column in Model.Columns)
+                                    {
+                                        <th>@column.DisplayName</th>
+                                    }
+                                    @*<th>CRUD</th>*@
+                                </tr>
+                            }
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td id="column">
+                                <td colspan="@Model.Columns.Count()" class="dataTables_empty"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<br />
+<script type="text/javascript">
+
+    (function setDataTable() {
+        if (!window.jQuery || !$.fn.DataTable) {
+            setTimeout(setDataTable, 100);
+            return;
+        }
+
+        var Tipo = '@(ViewBag.Tipo)';
+        var Mensaje = '@(ViewBag.Mensaje)';
+        var $table = $('#@Model.Id');
+
+        @{            
+            
+            var options = new JObject();            
+            options["aaSorting"] = new JRaw("[[ 7, \"desc\" ]]");
+            options["bProcessing"] = true;
+            options["bStateSave"] = Model.StateSave;
+            options["bServerSide"] = true;
+            options["bFilter"] = Model.ShowSearch;
+            options["sDom"] = new JRaw("\"T<\\\"clear\\\">lftipr\"");
+            options["oColVis"] = new JRaw("{'showAll': 'Todas','aiExclude': [ 0 ],'buttonText': 'Mostrar / Ocultar','sAlign': 'left'}");
+
+            if (Model.LengthMenu != null)
+            {
+                options["lengthMenu"] = new JRaw(Model.LengthMenu);
+            }
+            if (Model.PageLength.HasValue)
+            {
+                options["pageLength"] = Model.PageLength;
+            }
+            options["bAutoWidth"] = Model.AutoWidth;
+            options["sAjaxSource"] = Model.AjaxUrl;
+            if (Model.TableTools)
+            {
+                options["oTableTools"] = new JRaw("{ 'sSwfPath': '//cdn.datatables.net/tabletools/2.2.1/swf/copy_csv_xls_pdf.swf' }");
+            }
+            options["fnServerData"] = new JRaw(" function(sSource, aoData, fnCallback) { $.ajax({ 'dataType': 'json', 'type': 'POST', 'url': sSource, 'data': aoData, 'success':  function(json) { if(Tipo==1){Tipo=0; Messenger().post({ message: Mensaje , hideAfter: 3, hideOnNavigate: true})} else { if (Tipo==-1){Tipo=0; Messenger().post({ message: Mensaje, type: 'error', hideAfter: 3, hideOnNavigate: true})}}  fnCallback(json)} })}");
+            options["fnRowCallback"] = new JRaw("function( nRow, aData, iDisplayIndex, iDisplayIndexFull ) {if (aData[0] == false){ $(nRow).css('color', 'red') }}");
+            options["aoColumnDefs"] = new JRaw("[{\"bVisible\":false,\"aTargets\":[0]},{\"targets\":-1, bSortable: false, \"data\":0, \"mRender\": function ( data, type, full ) {return '<div class=\"fila-tabla-botones\"><div class=\"fila-tabla\"><a class=\"btn btn-success btn-xs\" title=\"Details\" href=\"#\"> <i class=\"fa fa-search-plus\"></i></a></div><div class=\"fila-tabla\"><a class=\"btn btn-primary btn-xs\" title=\"title\" href=\"#\"> <i class=\"fa fa-envelope\"></i></a></div></div>';}}]");
+            options["aoSearchCols"] = Model.SearchCols;
+            if (Model.JsOptions.Any())
+            {
+                foreach (var jsOption in Model.JsOptions)
+                {
+                    options[jsOption.Key] = new JRaw(jsOption.Value);
+                }
+            }
+            if (!string.IsNullOrWhiteSpace(Model.Language))
+            {
+                options["oLanguage"] = new JRaw(Model.Language);
+            }
+            if (!string.IsNullOrWhiteSpace(Model.DrawCallback))
+            {
+                options["fnDrawCallback"] = new JRaw(Model.DrawCallback);
+            }
+
+        }
+
+        var dt = $table.dataTable(@Html.Raw(options.ToString(Formatting.Indented)));
+        @if (Model.ColumnFilter)
+        {
+            @Html.Raw("dt.columnFilter(" + Model.ColumnFilterVm + ");")
+        }
+
+        @if (Model.GlobalJsVariableName != null)
+        {
+            @Html.Raw("window['@Model.GlobalJsVariableName'] = dt;")
+        }
+        @{ViewBag.Tipo = 0;}
+
+    })();
+</script>
